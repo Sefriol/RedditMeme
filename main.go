@@ -1,9 +1,9 @@
 package main
 
 import (
-	"bufio"
-	"fmt"
-	"os"
+    "bufio"
+    "fmt"
+    "os"
     "strings"
     "net/url"
 	"github.com/jzelinskie/geddit"
@@ -12,33 +12,33 @@ import (
 var session *geddit.LoginSession
 // Please don't handle errors this way.
 func main() {
-	//Read reddit username and password
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Print("Enter Username: ")
-	usr, _ := reader.ReadString('\n')
+    //Read reddit username and password
+    reader := bufio.NewReader(os.Stdin)
+    fmt.Print("Enter Username: ")
+    usr, _ := reader.ReadString('\n')
     usr = strings.TrimSpace(usr)
-	fmt.Print("Enter Password: ")
-	pwd, _ := reader.ReadString('\n')
+    fmt.Print("Enter Password: ")
+    pwd, _ := reader.ReadString('\n')
     pwd = strings.TrimSpace(pwd)
-
-	// Login to reddit
-	session, _ = geddit.NewLoginSession(
-		usr,
-		pwd,
-		"gedditAgent v1",
-	)
-
-	// Set listing options
-	subOpts := geddit.ListingOptions{
-		Limit: 100,
-	}
     
-	// Get specific subreddit submissions, sorted by new
-	submissions, _ := session.SubredditSubmissions("Dota2", geddit.TopSubmissions, subOpts)
+    // Login to reddit
+    session, _ = geddit.NewLoginSession(
+        usr,
+        pwd,
+        "gedditAgent v1",
+    )
+
+    // Set listing options
+    subOpts := geddit.ListingOptions{
+        Limit: 100,
+    }
+    
+    // Get specific subreddit submissions, sorted by new
+    submissions, _ := session.SubredditSubmissions("Dota2", geddit.TopSubmissions, subOpts)
     fmt.Printf("Len: %d\n\n", len(submissions))
     subOpts = geddit.ListingOptions{
-		Limit: 35,
-	}
+        Limit: 35,
+    }
     submissionshot, _ := session.SubredditSubmissions("Dota2", geddit.HotSubmissions, subOpts)
     submissions = append(submissions,submissionshot...)
 
@@ -63,18 +63,17 @@ func main() {
     }
     //http://rkgk.api.searchify.com/v1/indexes/kym_production/instantlinks?query=jotain&fetch=*
     
-	// Print title and author of each submission
+    // Print title and author of each submission
     // comments, _ := session.Comments(submissions[0])
     // for _, c := range comments {
-	// 	fmt.Printf("Comment: %s\n\n",c.String())
-	// }
-	// for _, s := range submissions {
-        
-	// 	fmt.Printf("Title: %s\nAuthor: %s Comments: %s\n\n", s.Title, s.Author,comments)
-	// }
-
-	// Upvote the first post
-	//session.Vote(submissions[0], geddit.UpVote)
+    //      fmt.Printf("Comment: %s\n\n",c.String())
+    // }
+    // for _, s := range submissions {
+        // 	fmt.Printf("Title: %s\nAuthor: %s Comments: %s\n\n", s.Title, s.Author,comments)
+    // }
+    
+    // Upvote the first post
+    //session.Vote(submissions[0], geddit.UpVote)
 }
 
 func commentDetect(detect string, comments []*geddit.Comment)([]*geddit.Comment)  {
