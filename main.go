@@ -8,6 +8,8 @@ import (
 	"github.com/jzelinskie/geddit"
     "sort"
     "sync"
+    "net/url"
+    "io/ioutil"
 )
 //Match ...
 type Match struct {
@@ -18,6 +20,35 @@ var session *geddit.LoginSession
 var matches []*Match
 var memeTrigger = "Would you kindly explain "
 // Please don't handle errors this way.
+
+type source int
+
+const (
+    none = 0
+	kym = 1 
+	dota = 2
+)
+
+type Meme struct {
+    Meme string
+    Type source
+}
+
+func(m Meme) String() string {
+    var s string
+	switch m.Type {
+        case none:
+            s = "messages/reply404.md"
+        case kym:
+            s = "messages/replyKYM.md"
+        case dota:
+            s = "messages/replyDota.md"
+        default:
+            s = "¡Unknown!"
+	}
+	return s
+}
+
 func main() {
     //Read reddit username and password
     reader := bufio.NewReader(os.Stdin)
@@ -95,6 +126,7 @@ func main() {
     //session.Vote(submissions[0], geddit.UpVote)
 }
 
+//CommentDetect Go through comments in subreddit
 func CommentDetect(detect string, comment []*geddit.Comment,  comments chan *geddit.Comment, wg sync.WaitGroup)  {
     var temp *Match
     for _, c := range comment {
@@ -117,29 +149,42 @@ func CommentDetect(detect string, comment []*geddit.Comment,  comments chan *ged
         if len(c.Replies) > 0 {
             go func() {
                 wg.Add(1)
-                commentDetect(detect, c.Replies,comments,wg)
+                CommentDetect(detect, c.Replies,comments,wg)
             }()
         }
     }
     defer wg.Done()
 }
 
-func MemeCheck(comment *geddit.Comment,wg sync.WaitGroup)  {
+//MemeCheck checks for memes in the trigger comment
+func MemeCheck(comment *geddit.Comment,wg sync.WaitGroup)(meme Meme, err error)  {
     //Trim text for meme search
     commenText :=  comment.Body[strings.Index(comment.Body, memeTrigger) + len(memeTrigger):]    
     
-    replyKYM := "p&gt;p&gt;Read the full meme in [knowyourmeme](%s)! ---- ^This ^message ^was ^created ^by ^a ^bot [^[Contact ^creator]](http://np.reddit.com/message/compose/?to=&amp;amp;subject=TweetsInCommentsBot)[^[Github]](https://github.com/)"
-    replyDotaMeme := `---- 
-    p&gt;p&gt; ^Well ^memed? ^No? ^Improve ^this ^meme [^here](http://np.reddit.com/message/compose/?to=&amp;amp;subject=ALTER)
-    p&gt;^This ^message ^was ^created ^by ^a ^bot [^[Contact ^creator]](http://np.reddit.com/message/compose/?to=&amp;amp;subject=)[^[Github]](https://github.com/)`
+    //TODO memebank
+    
     fmt.Printf("id: %s Comment: %s\n\n",comment.FullID, commenText)
     urlquery := url.QueryEscape(strings.TrimSpace(commenText))
     fmt.Printf("urlquery %s\n\n",urlquery)
-    
     knowyourmemes, err := getMemes(urlquery)
-    if err != nill {
-        meme := knowyourmemes[0][:strings.Index(knowyourmemes[0], "h2. Origin")]
+    if err != nil {
+        //At the moment we use just the first result given.
+        meme.Meme = knowyourmemes[0].Body[:strings.Index(knowyourmemes[0].Body, "h2. Origin")]
+        meme.Type = 1
+    } else {
+        meme.Meme = ""
+        meme.Type = 0
     }
-    knowyourmemes
     defer wg.Done()
+    return meme, nil
+}
+
+//Reply uses geddit.comment to reply to a reddit comment
+func Reply(session geddit.LoginSession, meme Meme, Comment geddit.Comment,condition bool)(err error){
+    file, err := ioutil.ReadFile(meme.String())
+    if err != nil {
+        return err
+    }
+    reply := string(file)
+    return session.Reply(Comment,reply)
 }
